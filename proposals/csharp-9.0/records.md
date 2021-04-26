@@ -15,11 +15,11 @@ record_declaration
 record_base
     : ':' class_type argument_list?
     | ':' interface_type_list
-    | ':' class_type argument_list? interface_type_list
+    | ':' class_type argument_list? ',' interface_type_list
     ;
 
 record_body
-    : '{' class_member_declaration* '}'
+    : '{' class_member_declaration* '}' ';'?
     | ';'
     ;
 ```
@@ -42,6 +42,7 @@ an accessible concrete non-virtual member with a "matching" signature is inherit
 Two members are considered matching if they have the same
 signature or would be considered "hiding" in an inheritance scenario.
 It is an error for a member of a record to be named "Clone".
+It is an error for an instance field of a record to have an unsafe type.
 
 The synthesized members are as follows:
 
@@ -80,10 +81,10 @@ the value of `EqualityContract == other.EqualityContract`.
 
 The record type includes synthesized `==` and `!=` operators equivalent to operators declared as follows:
 ```C#
-pubic static bool operator==(R? r1, R? r2)
-    => (object)r1 == r2 || (r1?.Equals(r2) ?? false);
-public static bool operator!=(R? r1, R? r2)
-    => !(r1 == r2);
+public static bool operator==(R? left, R? right)
+    => (object)left == right || (left?.Equals(right) ?? false);
+public static bool operator!=(R? left, R? right)
+    => !(left == right);
 ```
 The `Equals` method called by the `==` operator is the `Equals(R? other)` method specified above. The `!=` operator delegates to the `==` operator. It is an error if the operators are declared explicitly.
     
@@ -110,7 +111,7 @@ It is an error if the explicit declaration doesn't allow overriding it in a deri
  
 A warning is reported if one of `Equals(R?)` and `GetHashCode()` is explicitly declared but the other method is not explicit.
 
-The synthesized override of `GetHashCode()` returns an `int` result of a deterministic function combining the following values:
+The synthesized override of `GetHashCode()` returns an `int` result of combining the following values:
 - For each instance field `fieldN` in the record type that is not inherited, the value of
 `System.Collections.Generic.EqualityComparer<TN>.Default.GetHashCode(fieldN)` where `TN` is the field type, and
 - If there is a base record type, the value of `base.GetHashCode()`; otherwise
@@ -136,10 +137,10 @@ class R1 : IEquatable<R1>
             EqualityContract == other.EqualityContract &&
             EqualityComparer<T1>.Default.Equals(P1, other.P1);
     }
-    pubic static bool operator==(R1? r1, R1? r2)
-        => (object)r1 == r2 || (r1?.Equals(r2) ?? false);
-    public static bool operator!=(R1? r1, R1? r2)
-        => !(r1 == r2);    
+    public static bool operator==(R1? left, R1? right)
+        => (object)left == right || (left?.Equals(right) ?? false);
+    public static bool operator!=(R1? left, R1? right)
+        => !(left == right);
     public override int GetHashCode()
     {
         return Combine(EqualityComparer<Type>.Default.GetHashCode(EqualityContract),
@@ -158,10 +159,10 @@ class R2 : R1, IEquatable<R2>
         return base.Equals((R1?)other) &&
             EqualityComparer<T2>.Default.Equals(P2, other.P2);
     }
-    pubic static bool operator==(R2? r1, R2? r2)
-        => (object)r1 == r2 || (r1?.Equals(r2) ?? false);
-    public static bool operator!=(R2? r1, R2? r2)
-        => !(r1 == r2);    
+    public static bool operator==(R2? left, R2? right)
+        => (object)left == right || (left?.Equals(right) ?? false);
+    public static bool operator!=(R2? left, R2? right)
+        => !(left == right);
     public override int GetHashCode()
     {
         return Combine(base.GetHashCode(),
@@ -180,10 +181,10 @@ class R3 : R2, IEquatable<R3>
         return base.Equals((R2?)other) &&
             EqualityComparer<T3>.Default.Equals(P3, other.P3);
     }
-    pubic static bool operator==(R3? r1, R3? r2)
-        => (object)r1 == r2 || (r1?.Equals(r2) ?? false);
-    public static bool operator!=(R3? r1, R3? r2)
-        => !(r1 == r2);    
+    public static bool operator==(R3? left, R3? right)
+        => (object)left == right || (left?.Equals(right) ?? false);
+    public static bool operator!=(R3? left, R3? right)
+        => !(left == right);
     public override int GetHashCode()
     {
         return Combine(base.GetHashCode(),
@@ -226,13 +227,15 @@ If the "clone" method is not abstract, it returns the result of a call to a copy
 
 If the record is derived from `object`, the record includes a synthesized method equivalent to a method declared as follows:
 ```C#
-bool PrintMembers(System.StringBuilder builder);
+bool PrintMembers(System.Text.StringBuilder builder);
 ```
 The method is `private` if the record type is `sealed`. Otherwise, the method is `virtual` and `protected`.
 
 The method:
-1. for each of the record's printable members (non-static public field and readable property members), appends that member's name followed by " = " followed by the member's value: `this.member`, separated with ", ",
+1. for each of the record's printable members (non-static public field and readable property members), appends that member's name followed by " = " followed by the member's value separated with ", ",
 2. return true if the record has printable members.
+
+For a member that has a value type, we will convert its value to a string representation using the most efficient method available to the target platform. At present that means calling `ToString` before passing to `StringBuilder.Append`.
 
 If the record type is derived from a base record `Base`, the record includes a synthesized override equivalent to a method declared as follows:
 ```C#
@@ -282,7 +285,7 @@ class R1 : IEquatable<R1>
     {
         builder.Append(nameof(P1));
         builder.Append(" = ");
-        builder.Append(this.P1); // or builder.Append(this.P1); if P1 has a value type
+        builder.Append(this.P1); // or builder.Append(this.P1.ToString()); if P1 has a value type
         
         return true;
     }
@@ -306,7 +309,7 @@ class R2 : R1, IEquatable<R2>
     public T2 P2 { get; init; }
     public T3 P3 { get; init; }
     
-    protected override void PrintMembers(StringBuilder builder)
+    protected override bool PrintMembers(StringBuilder builder)
     {
         if (base.PrintMembers(builder))
             builder.Append(", ");
@@ -365,7 +368,9 @@ of the `record_base` clause and within initializers of instance fields or proper
 be an error in these locations (similar to how instance members are in scope in regular constructor initializers
 today, but an error to use), but the parameters of the primary constructor would be in scope and useable and
 would shadow members. Static members would also be useable, similar to how base calls and initializers work in
-ordinary constructors today. 
+ordinary constructors today.
+
+A warning is produced if a parameter of the primary constructor is not read.
 
 Expression variables declared in the `argument_list` are in scope within the `argument_list`. The same shadowing
 rules as within an argument list of a regular constructor initializer apply.
@@ -380,6 +385,7 @@ For a record:
 * A public `get` and `init` auto-property is created (see separate `init` accessor specification).
   An inherited `abstract` property with matching type is overridden.
   It is an error if the inherited property does not have `public` overridable `get` and `init` accessors.
+  It is an error if the inherited property is hidden.  
   The auto-property is initialized to the value of the corresponding primary constructor parameter.
   Attributes can be applied to the synthesized auto-property and its backing field by using `property:` or `field:`
   targets for attributes syntactically applied to the corresponding record parameter.  

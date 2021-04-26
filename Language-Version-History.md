@@ -18,6 +18,7 @@ Features Added in C# Language Versions
 - [Module initializers](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/module-initializers.md): a method attributed with `[ModuleInitializer]` will be executed before any other code in the assembly.
 - [Extension `GetEnumerator`](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/extension-getenumerator.md): an extension `GetEnumerator` method can be used in a `foreach`.
 - [Partial methods with returned values](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/extending-partial-methods.md): partial methods can have any accessibility, return a type other than `void` and use `out` parameters, but must be implemented.
+- [Source Generators](https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/)
 
 # C# 8.0 - .NET Core 3.0 and Visual Studio 2019 version 16.3 
 - [Nullable reference types](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-8.0/nullable-reference-types-specification.md): express nullability intent on reference types with `?`, `notnull` constraint and annotations attributes in APIs, the compiler will use those to try and detect possible `null` values being dereferenced or passed to unsuitable APIs.
@@ -75,7 +76,7 @@ Features Added in C# Language Versions
 - [More expression-bodied members](https://docs.microsoft.com/dotnet/csharp/programming-guide/statements-expressions-operators/expression-bodied-members)
 - [Throw expressions](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-7.0/throw-expression.md)
 
-# [C# 6](https://github.com/dotnet/roslyn/wiki/New-Language-Features-in-C%23-6) - Visual Studio 2015
+# [C# 6](https://github.com/dotnet/roslyn/blob/master/docs/wiki/New-Language-Features-in-C%23-6.md) - Visual Studio 2015
 - [Draft Specification online](https://github.com/dotnet/csharplang/blob/master/spec/README.md)
 - Compiler-as-a-service (Roslyn)
 - [Import of static type members into namespace](https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/using-static)
